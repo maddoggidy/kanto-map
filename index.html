@@ -1,25 +1,240 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kanto Map</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: black;
-    }
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>Kanto Pokédex Map</title>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  color: #fff;
+  height: 100%;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+}
+
+#map-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.marker {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: #ff3333;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+
+.marker.route {
+  background: #33aaff;
+}
+
+#ui {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 999;
+}
+
+button {
+  background: #222;
+  color: #fff;
+  border: 1px solid #555;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#info {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-height: 45%;
+  background: rgba(0,0,0,0.9);
+  border-top: 2px solid #444;
+  padding: 10px;
+  overflow-y: auto;
+  display: none;
+}
+
+#info h2 {
+  margin: 0 0 6px 0;
+}
+</style>
 </head>
+
 <body>
-  <img src="kanto.png" alt="Kanto Map">
+<div id="ui">
+  <button onclick="toggle('cities')">Cities</button>
+  <button onclick="toggle('routes')">Routes</button>
+</div>
+
+<div id="map-container">
+  <img id="map" src="kanto.png" />
+
+  <!-- Cities -->
+  <div class="marker city" style="left:32%;top:72%;" onclick="openInfo('Pallet Town')"></div>
+  <div class="marker city" style="left:35%;top:60%;" onclick="openInfo('Viridian City')"></div>
+  <div class="marker city" style="left:38%;top:45%;" onclick="openInfo('Pewter City')"></div>
+  <div class="marker city" style="left:55%;top:30%;" onclick="openInfo('Cerulean City')"></div>
+
+  <!-- Routes -->
+  <div class="marker route" style="left:36%;top:55%;" onclick="openInfo('Route 1')"></div>
+  <div class="marker route" style="left:38%;top:50%;" onclick="openInfo('Route 2')"></div>
+</div>
+
+<div id="info"></div>
+
+<script>
+/* ================= MAP CONTROLS ================= */
+let scale = 1;
+let originX = 0;
+let originY = 0;
+let startX = 0;
+let startY = 0;
+let isPanning = false;
+let startDist = 0;
+let startScale = 1;
+
+const map = document.getElementById("map");
+const container = document.getElementById("map-container");
+
+function updateTransform() {
+  map.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+}
+
+container.addEventListener("wheel", e => {
+  e.preventDefault();
+  scale *= e.deltaY < 0 ? 1.1 : 0.9;
+  scale = Math.min(4, Math.max(0.6, scale));
+  updateTransform();
+});
+
+container.addEventListener("mousedown", e => {
+  isPanning = true;
+  startX = e.clientX - originX;
+  startY = e.clientY - originY;
+});
+
+container.addEventListener("mousemove", e => {
+  if (!isPanning) return;
+  originX = e.clientX - startX;
+  originY = e.clientY - startY;
+  updateTransform();
+});
+
+container.addEventListener("mouseup", () => isPanning = false);
+container.addEventListener("mouseleave", () => isPanning = false);
+
+container.addEventListener("touchstart", e => {
+  if (e.touches.length === 1) {
+    isPanning = true;
+    startX = e.touches[0].clientX - originX;
+    startY = e.touches[0].clientY - originY;
+  }
+  if (e.touches.length === 2) {
+    isPanning = false;
+    startDist = dist(e.touches);
+    startScale = scale;
+  }
+});
+
+container.addEventListener("touchmove", e => {
+  e.preventDefault();
+  if (e.touches.length === 1 && isPanning) {
+    originX = e.touches[0].clientX - startX;
+    originY = e.touches[0].clientY - startY;
+    updateTransform();
+  }
+  if (e.touches.length === 2) {
+    scale = startScale * (dist(e.touches) / startDist);
+    scale = Math.min(4, Math.max(0.6, scale));
+    updateTransform();
+  }
+});
+
+function dist(t) {
+  return Math.hypot(
+    t[0].clientX - t[1].clientX,
+    t[0].clientY - t[1].clientY
+  );
+}
+
+/* ================= DATA ================= */
+const DATA = {
+  "Pallet Town": {
+    type: "City",
+    notes: "Starting town"
+  },
+  "Viridian City": {
+    type: "City",
+    notes: "Gym locked early"
+  },
+  "Route 1": {
+    type: "Route",
+    grass: [
+      "Pidgey Lv2–5",
+      "Rattata Lv2–4"
+    ]
+  },
+  "Route 2": {
+    type: "Route",
+    grass: [
+      "Caterpie Lv3–7",
+      "Weedle Lv3–7",
+      "Pidgey Lv3–6"
+    ]
+  }
+};
+
+/* ================= UI ================= */
+function openInfo(name) {
+  const info = document.getElementById("info");
+  const d = DATA[name];
+  if (!d) return;
+
+  let html = `<h2>${name}</h2>`;
+  if (d.type) html += `<p><b>Type:</b> ${d.type}</p>`;
+  if (d.notes) html += `<p>${d.notes}</p>`;
+
+  if (d.grass) {
+    html += "<h3>Grass Encounters</h3><ul>";
+    d.grass.forEach(p => html += `<li>${p}</li>`);
+    html += "</ul>";
+  }
+
+  info.innerHTML = html;
+  info.style.display = "block";
+}
+
+function toggle(cls) {
+  document.querySelectorAll(`.${cls}`).forEach(el => {
+    el.style.display = el.style.display === "none" ? "block" : "none";
+  });
+}
+
+updateTransform();
+</script>
 </body>
 </html>
