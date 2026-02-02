@@ -1,67 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-<title>Kanto Pokédex Map</title>
+<meta charset="UTF-8">
+<title>Kanto Map – Pokémon Locations</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 <style>
 html, body {
   margin: 0;
   padding: 0;
   background: #000;
-  color: #fff;
   height: 100%;
   overflow: hidden;
   font-family: Arial, sans-serif;
 }
 
-#map-container {
+#map-wrapper {
   width: 100%;
   height: 100%;
-  position: relative;
   overflow: hidden;
   touch-action: none;
 }
 
 #map {
   position: absolute;
-  top: 0;
-  left: 0;
   transform-origin: 0 0;
-  user-select: none;
-  -webkit-user-drag: none;
 }
 
 .marker {
   position: absolute;
-  width: 16px;
-  height: 16px;
-  background: #ff3333;
-  border: 2px solid #fff;
+  width: 14px;
+  height: 14px;
+  background: red;
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  cursor: pointer;
-}
-
-.marker.route {
-  background: #33aaff;
-}
-
-#ui {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  z-index: 999;
-}
-
-button {
-  background: #222;
-  color: #fff;
-  border: 1px solid #555;
-  padding: 6px 10px;
-  margin-bottom: 6px;
-  border-radius: 6px;
   cursor: pointer;
 }
 
@@ -69,172 +41,102 @@ button {
   position: fixed;
   bottom: 0;
   left: 0;
-  width: 100%;
-  max-height: 45%;
-  background: rgba(0,0,0,0.9);
-  border-top: 2px solid #444;
+  right: 0;
+  background: rgba(0,0,0,0.85);
+  color: #fff;
   padding: 10px;
-  overflow-y: auto;
+  font-size: 14px;
   display: none;
-}
-
-#info h2 {
-  margin: 0 0 6px 0;
 }
 </style>
 </head>
 
 <body>
-<div id="ui">
-  <button onclick="toggle('cities')">Cities</button>
-  <button onclick="toggle('routes')">Routes</button>
-</div>
 
-<div id="map-container">
+<div id="map-wrapper">
   <img id="map" src="kanto.png" />
-
-  <!-- Cities -->
-  <div class="marker city" style="left:32%;top:72%;" onclick="openInfo('Pallet Town')"></div>
-  <div class="marker city" style="left:35%;top:60%;" onclick="openInfo('Viridian City')"></div>
-  <div class="marker city" style="left:38%;top:45%;" onclick="openInfo('Pewter City')"></div>
-  <div class="marker city" style="left:55%;top:30%;" onclick="openInfo('Cerulean City')"></div>
-
-  <!-- Routes -->
-  <div class="marker route" style="left:36%;top:55%;" onclick="openInfo('Route 1')"></div>
-  <div class="marker route" style="left:38%;top:50%;" onclick="openInfo('Route 2')"></div>
 </div>
 
 <div id="info"></div>
 
 <script>
-/* ================= MAP CONTROLS ================= */
-let scale = 1;
-let originX = 0;
-let originY = 0;
-let startX = 0;
-let startY = 0;
-let isPanning = false;
-let startDist = 0;
-let startScale = 1;
-
 const map = document.getElementById("map");
-const container = document.getElementById("map-container");
+const wrapper = document.getElementById("map-wrapper");
+const info = document.getElementById("info");
+
+let scale = 1;
+let x = 0;
+let y = 0;
+let startX, startY;
+let isPanning = false;
+
+// --- Pokémon data (example set, expandable)
+const pokemonSpawns = [
+  { name: "Pidgey", level: "2–5", x: 420, y: 610 },
+  { name: "Rattata", level: "2–4", x: 460, y: 640 },
+  { name: "Caterpie", level: "3–6", x: 500, y: 600 },
+  { name: "Pikachu", level: "5–8", x: 720, y: 540 },
+  { name: "Zubat", level: "6–10", x: 300, y: 820 },
+  { name: "Geodude", level: "8–12", x: 260, y: 760 },
+  { name: "Magikarp", level: "5–15", x: 820, y: 920 }
+];
+
+// --- Add markers
+pokemonSpawns.forEach(p => {
+  const m = document.createElement("div");
+  m.className = "marker";
+  m.style.left = p.x + "px";
+  m.style.top = p.y + "px";
+  m.onclick = () => {
+    info.style.display = "block";
+    info.innerHTML = `<b>${p.name}</b><br>Level: ${p.level}`;
+  };
+  map.parentElement.appendChild(m);
+});
+
+// --- Zoom
+wrapper.addEventListener("wheel", e => {
+  e.preventDefault();
+  scale += e.deltaY * -0.001;
+  scale = Math.min(Math.max(0.5, scale), 3);
+  updateTransform();
+}, { passive: false });
+
+// --- Pan
+wrapper.addEventListener("mousedown", e => {
+  isPanning = true;
+  startX = e.clientX - x;
+  startY = e.clientY - y;
+});
+
+wrapper.addEventListener("mousemove", e => {
+  if (!isPanning) return;
+  x = e.clientX - startX;
+  y = e.clientY - startY;
+  updateTransform();
+});
+
+wrapper.addEventListener("mouseup", () => isPanning = false);
+wrapper.addEventListener("mouseleave", () => isPanning = false);
+
+// --- Touch support
+wrapper.addEventListener("touchstart", e => {
+  const t = e.touches[0];
+  startX = t.clientX - x;
+  startY = t.clientY - y;
+});
+
+wrapper.addEventListener("touchmove", e => {
+  const t = e.touches[0];
+  x = t.clientX - startX;
+  y = t.clientY - startY;
+  updateTransform();
+});
 
 function updateTransform() {
-  map.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+  map.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
 }
-
-container.addEventListener("wheel", e => {
-  e.preventDefault();
-  scale *= e.deltaY < 0 ? 1.1 : 0.9;
-  scale = Math.min(4, Math.max(0.6, scale));
-  updateTransform();
-});
-
-container.addEventListener("mousedown", e => {
-  isPanning = true;
-  startX = e.clientX - originX;
-  startY = e.clientY - originY;
-});
-
-container.addEventListener("mousemove", e => {
-  if (!isPanning) return;
-  originX = e.clientX - startX;
-  originY = e.clientY - startY;
-  updateTransform();
-});
-
-container.addEventListener("mouseup", () => isPanning = false);
-container.addEventListener("mouseleave", () => isPanning = false);
-
-container.addEventListener("touchstart", e => {
-  if (e.touches.length === 1) {
-    isPanning = true;
-    startX = e.touches[0].clientX - originX;
-    startY = e.touches[0].clientY - originY;
-  }
-  if (e.touches.length === 2) {
-    isPanning = false;
-    startDist = dist(e.touches);
-    startScale = scale;
-  }
-});
-
-container.addEventListener("touchmove", e => {
-  e.preventDefault();
-  if (e.touches.length === 1 && isPanning) {
-    originX = e.touches[0].clientX - startX;
-    originY = e.touches[0].clientY - startY;
-    updateTransform();
-  }
-  if (e.touches.length === 2) {
-    scale = startScale * (dist(e.touches) / startDist);
-    scale = Math.min(4, Math.max(0.6, scale));
-    updateTransform();
-  }
-});
-
-function dist(t) {
-  return Math.hypot(
-    t[0].clientX - t[1].clientX,
-    t[0].clientY - t[1].clientY
-  );
-}
-
-/* ================= DATA ================= */
-const DATA = {
-  "Pallet Town": {
-    type: "City",
-    notes: "Starting town"
-  },
-  "Viridian City": {
-    type: "City",
-    notes: "Gym locked early"
-  },
-  "Route 1": {
-    type: "Route",
-    grass: [
-      "Pidgey Lv2–5",
-      "Rattata Lv2–4"
-    ]
-  },
-  "Route 2": {
-    type: "Route",
-    grass: [
-      "Caterpie Lv3–7",
-      "Weedle Lv3–7",
-      "Pidgey Lv3–6"
-    ]
-  }
-};
-
-/* ================= UI ================= */
-function openInfo(name) {
-  const info = document.getElementById("info");
-  const d = DATA[name];
-  if (!d) return;
-
-  let html = `<h2>${name}</h2>`;
-  if (d.type) html += `<p><b>Type:</b> ${d.type}</p>`;
-  if (d.notes) html += `<p>${d.notes}</p>`;
-
-  if (d.grass) {
-    html += "<h3>Grass Encounters</h3><ul>";
-    d.grass.forEach(p => html += `<li>${p}</li>`);
-    html += "</ul>";
-  }
-
-  info.innerHTML = html;
-  info.style.display = "block";
-}
-
-function toggle(cls) {
-  document.querySelectorAll(`.${cls}`).forEach(el => {
-    el.style.display = el.style.display === "none" ? "block" : "none";
-  });
-}
-
-updateTransform();
 </script>
+
 </body>
 </html>
