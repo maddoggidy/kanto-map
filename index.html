@@ -1,142 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Kanto Map – Pokémon Locations</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Kanto Map</title>
+    <style>
+        #map {
+            height: 100%;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
+    <script>
+        let map;
+        let markers = [];
 
-<style>
-html, body {
-  margin: 0;
-  padding: 0;
-  background: #000;
-  height: 100%;
-  overflow: hidden;
-  font-family: Arial, sans-serif;
-}
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 5,
+                center: {lat: 34.5, lng: 135.5},
+                gestureHandling: 'greedy'
+            });
 
-#map-wrapper {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  touch-action: none;
-}
+            const locations = [
+                {lat: 35.6895, lng: 139.6917, title: 'Marker 1'},
+                {lat: 34.0522, lng: -118.2437, title: 'Marker 2'},
+                // Add more markers as needed
+            ];
 
-#map {
-  position: absolute;
-  transform-origin: 0 0;
-}
+            locations.forEach((location) => {
+                const marker = new google.maps.Marker({
+                    position: {lat: location.lat, lng: location.lng},
+                    map: map,
+                    title: location.title
+                });
+                markers.push(marker);
 
-.marker {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background: red;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  cursor: pointer;
-}
-
-#info {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(0,0,0,0.85);
-  color: #fff;
-  padding: 10px;
-  font-size: 14px;
-  display: none;
-}
-</style>
+                marker.addListener('click', () => {
+                    map.setZoom(8);
+                    map.setCenter(marker.getPosition());
+                });
+            });
+        }
+    </script>
 </head>
-
 <body>
-
-<div id="map-wrapper">
-  <img id="map" src="kanto.png" />
-</div>
-
-<div id="info"></div>
-
-<script>
-const map = document.getElementById("map");
-const wrapper = document.getElementById("map-wrapper");
-const info = document.getElementById("info");
-
-let scale = 1;
-let x = 0;
-let y = 0;
-let startX, startY;
-let isPanning = false;
-
-// --- Pokémon data (example set, expandable)
-const pokemonSpawns = [
-  { name: "Pidgey", level: "2–5", x: 420, y: 610 },
-  { name: "Rattata", level: "2–4", x: 460, y: 640 },
-  { name: "Caterpie", level: "3–6", x: 500, y: 600 },
-  { name: "Pikachu", level: "5–8", x: 720, y: 540 },
-  { name: "Zubat", level: "6–10", x: 300, y: 820 },
-  { name: "Geodude", level: "8–12", x: 260, y: 760 },
-  { name: "Magikarp", level: "5–15", x: 820, y: 920 }
-];
-
-// --- Add markers
-pokemonSpawns.forEach(p => {
-  const m = document.createElement("div");
-  m.className = "marker";
-  m.style.left = p.x + "px";
-  m.style.top = p.y + "px";
-  m.onclick = () => {
-    info.style.display = "block";
-    info.innerHTML = `<b>${p.name}</b><br>Level: ${p.level}`;
-  };
-  map.parentElement.appendChild(m);
-});
-
-// --- Zoom
-wrapper.addEventListener("wheel", e => {
-  e.preventDefault();
-  scale += e.deltaY * -0.001;
-  scale = Math.min(Math.max(0.5, scale), 3);
-  updateTransform();
-}, { passive: false });
-
-// --- Pan
-wrapper.addEventListener("mousedown", e => {
-  isPanning = true;
-  startX = e.clientX - x;
-  startY = e.clientY - y;
-});
-
-wrapper.addEventListener("mousemove", e => {
-  if (!isPanning) return;
-  x = e.clientX - startX;
-  y = e.clientY - startY;
-  updateTransform();
-});
-
-wrapper.addEventListener("mouseup", () => isPanning = false);
-wrapper.addEventListener("mouseleave", () => isPanning = false);
-
-// --- Touch support
-wrapper.addEventListener("touchstart", e => {
-  const t = e.touches[0];
-  startX = t.clientX - x;
-  startY = t.clientY - y;
-});
-
-wrapper.addEventListener("touchmove", e => {
-  const t = e.touches[0];
-  x = t.clientX - startX;
-  y = t.clientY - startY;
-  updateTransform();
-});
-
-function updateTransform() {
-  map.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
-}
-</script>
-
+    <div id="map"></div>
 </body>
 </html>
