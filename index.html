@@ -3,68 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Pokémon Map</title>
-    <style>
-        /* Basic styling for the map container */
-        #map {
-            height: 100vh;
-            width: 100%;
-        }
-        .info-panel {
-            display: none;
-            position: absolute;
-            background: white;
-            padding: 10px;
-            border: 1px solid black;
-        }
-    </style>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <title>Kanto Map</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <h1>Kanto Region Pokémon Map</h1>
     <div id="map"></div>
-    <div id="info-panel" class="info-panel"></div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        // Initialize the map
-        var map = L.map('map').setView([0, 0], 2);
-
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-        }).addTo(map);
-
-        // Pokémon data
-        var pokemonData = [
-            { name: 'Pikachu', level: 25, area: 'Kanto', description: 'An Electric-type Pokémon.' },
-            { name: 'Charmander', level: 16, area: 'Kanto', description: 'A Fire-type Pokémon.' },
-            { name: 'Bulbasaur', level: 10, area: 'Kanto', description: 'A Grass/Poison-type Pokémon.' }
-        ];
-
-        // Add markers for each Pokémon
-        pokemonData.forEach(function(pokemon) {
-            var marker = L.marker([Math.random() * 180 - 90, Math.random() * 360 - 180]).addTo(map);
-            marker.on('click', function() {
-                $('#info-panel').html(`<strong>${pokemon.name}</strong><br>Level: ${pokemon.level}<br>Area: ${pokemon.area}<br>${pokemon.description}`).show();
+        // Map initialization
+        function initMap() {
+            const kantoCoords = { lat: 35.6852, lng: 139.7528 }; // Example coordinates
+            const map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 8,
+                center: kantoCoords,
             });
-        });
 
-        // Handle map panning and zooming
-        map.on('click', function() {
-            $('#info-panel').hide();
-        });
+            // Pokémon markers
+            const pokemonLocations = [
+                { coords: {lat: 38.4560, lng: 138.3955}, name: 'Pikachu'},
+                { coords: {lat: 35.6895, lng: 139.6917}, name: 'Bulbasaur'},
+                // Add more Pokémon with coordinates here
+            ];
 
-        // Function for touch support
-        function setupTouchSupport() {
-            var isTouch = 'ontouchstart' in window;
-            if (isTouch) {
-                map.on('touchstart', function(e) {
-                    $('#info-panel').hide();
+            pokemonLocations.forEach(pokemon => {
+                const marker = new google.maps.Marker({
+                    position: pokemon.coords,
+                    map: map,
+                    title: pokemon.name
                 });
-            }
+            });
         }
-
-        setupTouchSupport();
+    </script>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap">
     </script>
 </body>
 </html>
