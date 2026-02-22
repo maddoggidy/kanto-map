@@ -1,52 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Kanto Map</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Pokémon Map</title>
     <style>
+        /* Basic styling for the map container */
         #map {
-            height: 100%;
+            height: 100vh;
+            width: 100%;
         }
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
+        .info-panel {
+            display: none;
+            position: absolute;
+            background: white;
+            padding: 10px;
+            border: 1px solid black;
         }
     </style>
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
-    <script>
-        let map;
-        let markers = [];
-
-        function initMap() {
-            map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 5,
-                center: {lat: 34.5, lng: 135.5},
-                gestureHandling: 'greedy'
-            });
-
-            const locations = [
-                {lat: 35.6895, lng: 139.6917, title: 'Marker 1'},
-                {lat: 34.0522, lng: -118.2437, title: 'Marker 2'},
-                // Add more markers as needed
-            ];
-
-            locations.forEach((location) => {
-                const marker = new google.maps.Marker({
-                    position: {lat: location.lat, lng: location.lng},
-                    map: map,
-                    title: location.title
-                });
-                markers.push(marker);
-
-                marker.addListener('click', () => {
-                    map.setZoom(8);
-                    map.setCenter(marker.getPosition());
-                });
-            });
-        }
-    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
     <div id="map"></div>
+    <div id="info-panel" class="info-panel"></div>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([0, 0], 2);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Pokémon data
+        var pokemonData = [
+            { name: 'Pikachu', level: 25, area: 'Kanto', description: 'An Electric-type Pokémon.' },
+            { name: 'Charmander', level: 16, area: 'Kanto', description: 'A Fire-type Pokémon.' },
+            { name: 'Bulbasaur', level: 10, area: 'Kanto', description: 'A Grass/Poison-type Pokémon.' }
+        ];
+
+        // Add markers for each Pokémon
+        pokemonData.forEach(function(pokemon) {
+            var marker = L.marker([Math.random() * 180 - 90, Math.random() * 360 - 180]).addTo(map);
+            marker.on('click', function() {
+                $('#info-panel').html(`<strong>${pokemon.name}</strong><br>Level: ${pokemon.level}<br>Area: ${pokemon.area}<br>${pokemon.description}`).show();
+            });
+        });
+
+        // Handle map panning and zooming
+        map.on('click', function() {
+            $('#info-panel').hide();
+        });
+
+        // Function for touch support
+        function setupTouchSupport() {
+            var isTouch = 'ontouchstart' in window;
+            if (isTouch) {
+                map.on('touchstart', function(e) {
+                    $('#info-panel').hide();
+                });
+            }
+        }
+
+        setupTouchSupport();
+    </script>
 </body>
 </html>
